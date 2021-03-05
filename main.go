@@ -22,27 +22,13 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
-
-	// input := user.LoginInput{
-	// 	Email:    "ryansaputro52@gmail.coms",
-	// 	Password: "test123",
-	// }
-
-	// userFindByEmail, err := userService.Login(input)
-	// if err != nil {
-	// 	fmt.Println("ups terjadi kesalahan")
-	// 	fmt.Println(err.Error)
-	// }
-
-	// fmt.Println(userFindByEmail.Email)
-	// fmt.Println(userFindByEmail.Name)
-
 	userHandler := handler.NewUserHandler(userService)
 
 	router := gin.Default()
 	api := router.Group("api/v1")
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
+	api.POST("/email_checkers", userHandler.CheckEmailAvaibility)
 	router.Run()
 
 	// userInput := user.RegisterUserInput{}
