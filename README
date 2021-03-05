@@ -1,0 +1,11 @@
+struktur aplikasi
+
+input -> dari user
+    |
+    -----handler -> mapping input dr user -> struct input
+               |
+                -----service -> mapping struct input ke struct tujuan 
+                            |
+                            -----repository
+                                          |
+                                          -----db
