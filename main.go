@@ -3,8 +3,14 @@ package main
 import (
 	"crowdfunding/auth"
 	"crowdfunding/handler"
+	"crowdfunding/helper"
 	"crowdfunding/user"
+	"fmt"
 	"log"
+	"net/http"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
 
 	"github.com/gin-gonic/gin"
 
@@ -25,45 +31,70 @@ func main() {
 	userService := user.NewService(userRepository)
 	authService := auth.NewService()
 	userHandler := handler.NewUserHandler(userService, authService)
+	token, err := authService.ValidateToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1fQ.GWvL3pq455uC2QN-4Ll_vyEi_KGGAE9HNnq45aqKUUg")
+	if err != nil {
+		fmt.Println("ERROR")
+	}
+	if token.Valid {
+		fmt.Println("token Valid")
+	} else {
+		fmt.Println("token InValid")
 
-	// fmt.Println(authService.GenerateToken(1001))
+	}
 
 	router := gin.Default()
 	api := router.Group("api/v1")
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvaibility)
-	api.POST("/avatars", userHandler.UploadAvatar)
+	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 	router.Run()
 
-	// userInput := user.RegisterUserInput{}
-	// userInput.Name = "maruki"
-	// userInput.Occupation = "TNI"
-	// userInput.Email = "maruki@gmail.com"
-	// userInput.Password = "test123"
-
-	// UserService.RegisterUser(userInput)
-	// for _, user := range users {
-	// 	fmt.Println(user.Name)
-	// 	fmt.Println(user.Email)
-	// }
-
-	// router := gin.Default()
-	// router.GET("/handler", handler)
-	// router.Run()
 }
 
-// func handler(c *gin.Context) {
-// 	dsn := "root:admin@tcp(127.0.0.1:3306)/crowdfunding?charset=utf8mb4&parseTime=True&loc=Local"
-// 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
 
-// 	if err != nil {
-// 		log.Fatal(err.Error())
-// 	}
+		if !strings.Contains(authHeader, "Bearer") {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
 
-// 	var users []user.User
-// 	db.Find(&users)
+		tokenString := ""
+		arrayAuth := strings.Split(authHeader, " ")
 
-// 	c.JSON(http.StatusOK, users)
+		if len(arrayAuth) == 2 {
+			tokenString = arrayAuth[1]
+		}
 
-// }
+		token, err := authService.ValidateToken(tokenString)
+
+		if err != nil {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		claim, ok := token.Claims.(jwt.MapClaims)
+
+		if !ok || !token.Valid {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		UserID := int(claim["user_id"].(float64))
+		user, err := userService.GetUserByID(UserID)
+
+		if err != nil {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		c.Set("currentUser", user)
+
+	}
+}
