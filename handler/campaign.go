@@ -20,6 +20,7 @@ func NewCampaignHandler(campaignService campaign.Service) *campaignHandler {
 }
 
 func (h *campaignHandler) GetCampaigns(c *gin.Context) {
+	// convert string to integer
 	UserID, _ := strconv.Atoi(c.Query("user_id"))
 
 	campaigns, err := h.campaignService.GetCampaigns(UserID)
