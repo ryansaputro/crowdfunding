@@ -45,11 +45,11 @@ func main() {
 
 	router := gin.Default()
 	router.Static("images", "./images")
-	api := router.Group("api/v1")
-	api.POST("/users", userHandler.RegisterUser)
-	api.POST("/sessions", userHandler.Login)
-	api.POST("/email_checkers", userHandler.CheckEmailAvaibility)
-	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
+	api := router.Group("api/v1/")
+	api.POST("users", userHandler.RegisterUser)
+	api.POST("sessions", userHandler.Login)
+	api.POST("email_checkers", userHandler.CheckEmailAvaibility)
+	api.POST("avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 	api.GET("campaigns", campaignHandler.GetCampaigns)
 	api.GET("campaigns/:id", campaignHandler.GetCampaign)
 	api.POST("campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
@@ -57,6 +57,8 @@ func main() {
 	api.POST("campaign-images", authMiddleware(authService, userService), campaignHandler.UploadImage)
 	api.GET("campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
 	api.GET("transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransactions)
+	api.POST("transactions", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
+
 	router.Run()
 
 }
