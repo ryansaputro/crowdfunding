@@ -11,6 +11,19 @@ type CampaignTransactionsFormatter struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type UserTransactionsFormatter struct {
+	ID        int                                   `json:"id"`
+	Amount    int                                   `json:"amount"`
+	Status    string                                `json:"status"`
+	CreatedAt time.Time                             `json:"created_at"`
+	Campaign  UserTransactionsListCampaignFormatter `json:"campaign"`
+}
+
+type UserTransactionsListCampaignFormatter struct {
+	Name     string `json:"name"`
+	ImageURL string `json:"image_url"`
+}
+
 func FormatterCampaignTransaction(transaction Transaction) CampaignTransactionsFormatter {
 	formatter := CampaignTransactionsFormatter{
 		ID:        transaction.ID,
@@ -24,6 +37,10 @@ func FormatterCampaignTransaction(transaction Transaction) CampaignTransactionsF
 
 func FormatterCampaignTransactions(transactions []Transaction) []CampaignTransactionsFormatter {
 
+	if len(transactions) == 0 {
+		return []CampaignTransactionsFormatter{}
+	}
+
 	campaignsTransactionsFormatter := []CampaignTransactionsFormatter{}
 
 	for _, transaction := range transactions {
@@ -32,5 +49,43 @@ func FormatterCampaignTransactions(transactions []Transaction) []CampaignTransac
 	}
 
 	return campaignsTransactionsFormatter
+
+}
+
+func FormatterUserTransaction(transaction Transaction) UserTransactionsFormatter {
+	formatter := UserTransactionsFormatter{}
+	formatter.ID = transaction.ID
+	formatter.Amount = transaction.Amount
+	formatter.Status = transaction.Status
+	formatter.CreatedAt = transaction.CreatedAt
+
+	campaignFormatter := UserTransactionsListCampaignFormatter{}
+	campaignFormatter.Name = transaction.Campaign.Name
+
+	campaignFormatter.ImageURL = ""
+	if len(transaction.Campaign.CampaignImages) > 0 {
+		campaignFormatter.ImageURL = transaction.Campaign.CampaignImages[0].FileName
+
+	}
+
+	formatter.Campaign = campaignFormatter
+
+	return formatter
+
+}
+
+func FormatterUserTransactions(transactions []Transaction) []UserTransactionsFormatter {
+
+	if len(transactions) == 0 {
+		return []UserTransactionsFormatter{}
+	}
+	userTransactionsFormatter := []UserTransactionsFormatter{}
+
+	for _, transaction := range transactions {
+		userTransactionFormatter := FormatterUserTransaction(transaction)
+		userTransactionsFormatter = append(userTransactionsFormatter, userTransactionFormatter)
+	}
+
+	return userTransactionsFormatter
 
 }
