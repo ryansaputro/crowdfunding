@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"crowdfunding/campaign"
+	"crowdfunding/payment"
 	"errors"
 )
 
@@ -14,10 +15,11 @@ type Service interface {
 type service struct {
 	repository         Repository
 	campaignRepository campaign.Repository
+	paymentService     payment.Service
 }
 
-func NewService(repository Repository, campaignRepository campaign.Repository) *service {
-	return &service{repository, campaignRepository}
+func NewService(repository Repository, campaignRepository campaign.Repository, paymentService payment.Service) *service {
+	return &service{repository, campaignRepository, paymentService}
 }
 
 func (s *service) GetTransactionsByCampaignID(input GetTransactionsInput) ([]Transaction, error) {
@@ -58,6 +60,25 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	transactions.Status = "pending"
 
 	NewTransactions, err := s.repository.Save(transactions)
+
+	if err != nil {
+		return NewTransactions, err
+	}
+
+	paymentTransaction := payment.Transaction{
+		ID:     NewTransactions.ID,
+		Amount: NewTransactions.Amount,
+	}
+
+	paymentURL, err := s.paymentService.GetPaymentURL(paymentTransaction, input.User)
+
+	if err != nil {
+		return NewTransactions, err
+	}
+
+	NewTransactions.PaymentURL = paymentURL
+
+	NewTransactions, err = s.repository.Update(NewTransactions)
 
 	if err != nil {
 		return NewTransactions, err
